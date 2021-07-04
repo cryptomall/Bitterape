@@ -1,19 +1,4 @@
-/**
- *Submitted for verification at BscScan.com on 2021-06-01
-*/
-
-/**
-
-   #BitterApe
-   
-   Official Telegram @BitterApe & @BitterApeEspanol
-
-   5% fee auto add to the liquidity pool to locked forever when selling
-   3% fee auto distribute to all holders
-   3% fee auto moved to marketing/burn/charity wallet
-
- */
-
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
 /**
@@ -533,7 +518,7 @@ abstract contract Ownable is Context {
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor () {
-        _owner = 0x58406B38b702bfb458098A263BCcE1936Ce05f5b;
+        _owner = 0xfd30970d41b9b64e4f73963bd9bb7d2770ae2709;
         emit OwnershipTransferred(address(0), _owner);
     }
 
@@ -777,7 +762,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
     ) external;
 }
 
-contract BitterApe is Context, IERC20, Ownable {
+contract Bitter is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
 
@@ -790,33 +775,38 @@ contract BitterApe is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
 
-    address private _charityWalletAddress = 0x8C2F6C0eB0BD1b031860799430d7485264C17Aba;
+    address private _charityWalletAddress = 0x000000000000000000000000000000000000dead;
    
-    uint256 private constant MAX = ~uint256(0);
-    uint256 private _tTotal = 1000000000 * 10**6 * 10**9;
+uint256 private constant MAX = ~uint256(0);
+    bool inSwapAndLiquify;
+    uint256 private constant _tTotal = 10 * 10**9 * 10**9; // 10 Billion
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
     uint256 private _tFeeTotal;
-
-    string private _name = "BitterApe";
-    string private _symbol = "BAPE";
-    uint8 private _decimals = 9;
-    
-    uint256 public _taxFee = 3;
+     uint256 public _taxFee = 3;
     uint256 private _previousTaxFee = _taxFee;
     
-    uint256 public _charityFee = 3;
+    uint256 public _charityFee = 2;
     uint256 private _previousCharityFee = _charityFee;
     uint256 public _liquidityFee = 5;
-    uint256 private _previousLiquidityFee = _liquidityFee;
+    uint256 public _previousTaxFee = _taxFee;
+    uint256 public _previousLiquidityFee = _liquidityFee;
+    uint256 public _maxTxAmount = 50 * 10**6 * 10**9; // Max Transaction: 50 Million (0.5%)
+    uint256 public _numTokensSellToAddToLiquidity = 5 * 10**6 * 10**9;
+    uint256 public _maxWalletToken = 100 * 10**6 * 10**9; // Max Wallet: 100 Million (1%)
 
+    string private _name = "Bitter";
+    string private _symbol = "BA";
+    uint8 private _decimals = 9;
+  
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
     
     bool inSwapAndLiquify;
     bool public swapAndLiquifyEnabled = true;
     
-    uint256 public _maxTxAmount = 5000000 * 10**6 * 10**9;
-    uint256 private numTokensSellToAddToLiquidity = 500000 * 10**6 * 10**9;
+    uint256 public _maxTxAmount = 50 * 10**6 * 10**9;
+    uint256 private numTokensSellToAddToLiquidity =  5 * 10**6 * 10**9;
+    uint256 public _maxWalletToken = 100 * 10**6 * 10**9;
     
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -1107,10 +1097,15 @@ contract BitterApe is Context, IERC20, Ownable {
     function _approve(address owner, address spender, uint256 amount) private {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
+        require(amount > 0, "Transfer amount must be greater than zero");
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+    
+    if(sender != owner() && recipient != owner() && recipient != address(1) && recipient != pcsV2Pair){
+            uint256 contractBalanceRecepient = balanceOf(recipient);
+            require(contractBalanceRecepient + amount <= _maxWalletToken, "Exceeds maximum wallet token amount (100,000,000)"); 
 
     function _transfer(
         address from,
@@ -1122,6 +1117,8 @@ contract BitterApe is Context, IERC20, Ownable {
         require(amount > 0, "Transfer amount must be greater than zero");
         if(from != owner() && to != owner())
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
+            
+            
 
         // is the token balance of this contract address over the min number of
         // tokens that we need to initiate a swap + liquidity lock?
